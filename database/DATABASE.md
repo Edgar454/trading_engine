@@ -29,7 +29,7 @@ Initialization scripts create:
 The full database setup is implemented through **26 SQL scripts** organized by responsibility.
 
 Below is a simplified view of the database that excludes the views and the the risk limit table.
-![Database](images/database.png)
+![Database](images/database.jpg)
 
 ---
 
