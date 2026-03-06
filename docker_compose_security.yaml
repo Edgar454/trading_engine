@@ -1,0 +1,103 @@
+services:
+  vault:
+    build:
+      context: .
+      dockerfile: ./security/vault/config/Dockerfile
+    container_name: vault
+    restart: unless-stopped
+    cap_add:
+      - IPC_LOCK
+    environment: 
+      - VAULT_ADDR=unix:///vault/vault.sock
+    command: server 
+    post_start:
+      - command: /bin/sh -c "/init_vault.sh > /tmp/hook.log 2>&1"
+    volumes:
+      - vault-data:/vault/data
+      - vault-logs:/vault/logs
+      - vault_role_data:/opt/auth/approle/cert-agent/  
+      - agent-certs:/certs/agent
+      - ./security/vault/vault_certs:/certs/vault
+      - ./security/vault/config/vault_config.hcl:/vault/config/vault_config.hcl
+      - ./security/vault/config/metrics-policy.hcl:/opt/policies/metrics-policy.hcl
+      - ./security/vault/config/cert_agent_policy.hcl:/opt/policies/vault-agent-policy.hcl
+      - ./security/vault/setup/init_vault.sh:/init_vault.sh
+    networks:
+      - security_network
+    healthcheck:
+      test: [ "CMD-SHELL", "vault status || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+
+  vault-agent:
+    build:
+      context: .
+      dockerfile: ./security/vault/Dockerfile
+    container_name: trading-vault-agent
+    cap_drop:
+      - ALL
+    cap_add:
+      - IPC_LOCK
+      - CHOWN
+    volumes:
+      # Configuration
+      - vault_role_data:/etc/vault/
+      - agent-certs:/certs/agent
+      - ./security/vault/vault_certs:/certs/vault
+      
+      # Certificate output directories (shared with services)
+      - nifi-certs:/certs/nifi
+      - nifi-registry-certs:/certs/nifi-registry
+      - postgres-certs:/certs/postgres
+      - prometheus-certs:/certs/prometheus
+      - prometheus-token:/opt/prometheus/token/
+      - grafana-certs:/certs/grafana
+      - nginx-certs:/certs/nginx
+      - postgres-exporter-certs:/certs/postgres-exporter
+    environment:
+      VAULT_ADDR: https://vault:8200
+      NIFI_KEYSTORE_PASSWORD: ${NIFI_KEYSTORE_PASSWORD}
+    depends_on:
+      vault:
+        condition: service_healthy
+    networks:
+      - security_network
+    restart: unless-stopped
+
+
+
+networks:
+  security_network:
+    name: security_network
+    driver: bridge
+    
+
+volumes:
+  vault-data:
+  vault-logs:
+  vault_role_data:
+  vault-agent-data:
+  agent-certs:
+    name: agent-certs
+  nifi-certs:
+    name: nifi-certs
+  nifi-registry-certs:
+    name: nifi-registry-certs
+  postgres-certs:
+    name: postgres-certs
+  prometheus-token:
+    name: prometheus-token
+  prometheus-certs:
+    name: prometheus-certs
+  grafana-certs:
+    name: grafana-certs
+  nginx-certs:
+    name: nginx-certs
+  postgres-exporter-certs:
+    name: postgres-exporter-certs
+
+
+
+

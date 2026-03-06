@@ -1,0 +1,217 @@
+services:
+  nifi:
+    build:
+      context: ./nifi
+      dockerfile: Dockerfile
+    container_name: nifi
+    expose:
+      - "8443"
+    volumes:
+      - ./nifi/drivers:/opt/nifi/nifi-current/lib/custom 
+      - nifi_database_repository:/opt/nifi/nifi-current/database_repository
+      - nifi_flowfile_repository:/opt/nifi/nifi-current/flowfile_repository
+      - nifi_content_repository:/opt/nifi/nifi-current/content_repository
+      - nifi_provenance_repository:/opt/nifi/nifi-current/provenance_repository
+      - nifi_state:/opt/nifi/nifi-current/state
+      - nifi-certs:/opt/nifi/certs/
+    environment:
+      AUTH: tls
+      NIFI_WEB_HTTPS_PORT: 8443
+      SINGLE_USER_CREDENTIALS_USERNAME: edgar1
+      SINGLE_USER_CREDENTIALS_PASSWORD: ctsBtRBKHRAx69EqUghvvgEvjnaLjFEB
+      NIFI_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-NIFI_PASSWORD}
+      KEYSTORE_TYPE: JKS
+      KEYSTORE_PATH: /opt/nifi/certs/keystore.jks
+      KEYSTORE_PASSWORD: ${NIFI_KEYSTORE_PASSWORD}
+      TRUSTSTORE_TYPE: JKS
+      TRUSTSTORE_PATH: /opt/nifi/certs/truststore.jks
+      TRUSTSTORE_PASSWORD: ${NIFI_KEYSTORE_PASSWORD}
+      INITIAL_ADMIN_IDENTITY: CN=nginx.trading.local
+    networks:
+      - trading_network
+  
+  nifi-registry:
+    build:
+      context: ./nifi/registry
+      dockerfile: Dockerfile
+    container_name: nifi-registry
+    ports:
+      - "18443:18443"
+    volumes:
+      #- ./nifi/registry/config:/opt/nifi-registry/nifi-registry-current/conf
+      - ./nifi/registry/flow_storage:/opt/nifi-registry/nifi-registry-current/flow_storage 
+      - ./nifi/registry/database:/opt/nifi-registry/nifi-registry-current/database
+      - nifi-registry-certs:/opt/nifi-registry/certs/
+    environment:
+      LOG_LEVEL: INFO
+      NIFI_REGISTRY_DB_DIR: /opt/nifi-registry/nifi-registry-current/database
+      NIFI_REGISTRY_FLOW_PROVIDER: file
+      NIFI_REGISTRY_FLOW_STORAGE_DIR: /opt/nifi-registry/nifi-registry-current/flow_storage
+      AUTH: tls
+      NIFI_REGISTRY_WEB_HTTPS_PORT: 18443
+      KEYSTORE_TYPE: JKS
+      KEYSTORE_PATH: /opt/nifi-registry/certs/keystore.jks
+      KEYSTORE_PASSWORD: ${NIFI_KEYSTORE_PASSWORD}
+      TRUSTSTORE_TYPE: JKS
+      TRUSTSTORE_PATH: /opt/nifi-registry/certs/truststore.jks
+      TRUSTSTORE_PASSWORD: ${NIFI_KEYSTORE_PASSWORD}
+      INITIAL_ADMIN_IDENTITY: CN=nginx.trading.local
+    networks:
+      - trading_network
+
+  timescaledb:
+    build:
+      context: ./timescale_config
+      dockerfile: Dockerfile
+    container_name: trading-timescaledb
+    restart: always
+    environment:
+      POSTGRES_DB: trading
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+
+      # Application user passwords (for init_users.sh)
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    volumes:
+      - ./timescale_config/config/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./timescale_config/init_scripts:/docker-entrypoint-initdb.d/
+      - timescaledb_data:/var/lib/postgresql/data
+      - postgres-certs:/var/lib/postgresql/certs
+    ports:
+      - "5432:5432"
+    networks:
+      - trading_network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-trading}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  postgres-exporter:
+    image: ghcr.io/edgar454/pg_exporter:custom 
+    container_name: trading-postgres-exporter
+    expose:
+      - "9187"
+    environment:
+      PG_EXPORTER_DSN: ${DSN_NAME:-timescaledb:5432/trading?sslmode=verify-full}
+      PG_EXPORTER_PORT: 9187
+    command:
+      - '--collector.locks'
+      - '--collector.database'
+      - '--collector.stat'
+      - '--collector.replication'
+      - '--collector.index'
+      - '--collector.statements'
+      - '--collector.tls'
+      - '--collector.exporter'
+    volumes:
+      - postgres-exporter-certs:/certs/
+      - ./monitoring/postgres-exporter/web-config.yaml:/etc/postgres-exporter/web.yml
+    restart: unless-stopped
+    depends_on:
+       timescaledb:
+          condition: "service_healthy"
+    networks:
+      - trading_network
+
+  prometheus:
+    build:
+      context: ./monitoring/prometheus
+      dockerfile: Dockerfile
+    container_name: trading-prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.config.file=/etc/prometheus/web.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/web-config.yml:/etc/prometheus/web.yml
+      - prometheus-data:/prometheus
+      - prometheus-token:/opt/prometheus/token/
+      - prometheus-certs:/certs/prometheus
+    restart: unless-stopped
+    networks:
+      - trading_network
+      - security_network
+
+  grafana:
+    build:
+      context: ./monitoring/grafana
+      dockerfile: Dockerfile
+    container_name: trading-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: default_user
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    expose:
+      - "3000"
+    command:
+      - '--config=/etc/grafana/grafana.ini'
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - grafana-certs:/certs/grafana
+      - ./monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini
+
+    restart: unless-stopped
+    networks:
+      - trading_network
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nifi-proxy
+    volumes:
+      - nginx-certs:/certs/nginx
+      - grafana-certs:/certs/grafana
+      - postgres-exporter-certs:/certs/postgres-exporter
+    ports:
+      - "8080:80"
+      - "18080:81"   
+      - "8443:443" 
+      - "3100:90" 
+      - "3000:444"
+      - "9432:445"
+    depends_on:
+      - nifi
+      - postgres-exporter
+      - grafana
+    networks:
+      - trading_network
+
+volumes:
+  nifi_conf:
+  nifi_database_repository:
+  nifi_flowfile_repository:
+  nifi_content_repository:
+  nifi_provenance_repository:
+  nifi_state:
+  timescaledb_data:
+  grafana-data:
+  prometheus-data:
+  nifi-certs:
+    name: nifi-certs
+  nifi-registry-certs:
+    name: nifi-registry-certs
+  postgres-certs:
+    name: postgres-certs
+  nginx-certs:
+    name: nginx-certs
+  prometheus-certs:
+    name: prometheus-certs
+  grafana-certs:
+    name: grafana-certs
+  prometheus-token:
+    name: prometheus-token
+  postgres-exporter-certs:
+    name: postgres-exporter-certs
+
+networks:
+  trading_network:
+    external: true
+  security_network:
+    external: true

@@ -1,0 +1,18 @@
+# /etc/grafana/provisioning/datasources/prometheus.yaml
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: https://prometheus:9090
+    isDefault: true
+    jsonData:
+      tlsAuth: true
+      tlsAuthWithCACert: true
+      tlsSkipVerify: false
+      serverName: prometheus.trading.local
+    secureJsonData:
+      tlsCACert: $__file{/certs/grafana/ca.pem}
+      tlsClientCert: $__file{/certs/grafana/client.crt}
+      tlsClientKey: $__file{/certs/grafana/client.key}

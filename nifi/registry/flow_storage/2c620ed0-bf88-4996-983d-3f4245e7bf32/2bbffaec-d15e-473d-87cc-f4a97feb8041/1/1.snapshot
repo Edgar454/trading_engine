@@ -1,0 +1,57 @@
+{
+  "header" : {
+    "dataModelVersion" : "3"
+  },
+  "content" : {
+    "flowSnapshot" : {
+      "externalControllerServices" : { },
+      "flowContents" : {
+        "comments" : "",
+        "componentType" : "PROCESS_GROUP",
+        "connections" : [ ],
+        "controllerServices" : [ ],
+        "defaultBackPressureDataSizeThreshold" : "1 GB",
+        "defaultBackPressureObjectThreshold" : 10000,
+        "defaultFlowFileExpiration" : "0 sec",
+        "executionEngine" : "INHERITED",
+        "flowFileConcurrency" : "UNBOUNDED",
+        "flowFileOutboundPolicy" : "STREAM_WHEN_AVAILABLE",
+        "funnels" : [ ],
+        "identifier" : "c21aeffe-aa36-3476-976a-7ad2be442596",
+        "inputPorts" : [ {
+          "allowRemoteAccess" : false,
+          "componentType" : "INPUT_PORT",
+          "concurrentlySchedulableTaskCount" : 1,
+          "groupIdentifier" : "c21aeffe-aa36-3476-976a-7ad2be442596",
+          "identifier" : "f66f2327-8374-3345-ac56-a075b91239a3",
+          "instanceIdentifier" : "3f029df3-019c-1000-0d84-9e206a9d70d7",
+          "name" : "derivatives_symbols",
+          "portFunction" : "STANDARD",
+          "position" : {
+            "x" : -288.999994508986,
+            "y" : -144.8000408214998
+          },
+          "scheduledState" : "ENABLED",
+          "type" : "INPUT_PORT"
+        } ],
+        "instanceIdentifier" : "3f026e71-019c-1000-c6b9-3508345b50b2",
+        "labels" : [ ],
+        "maxConcurrentTasks" : 1,
+        "name" : "Derivatives_data_flow",
+        "outputPorts" : [ ],
+        "position" : {
+          "x" : -176.0,
+          "y" : -576.0
+        },
+        "processGroups" : [ ],
+        "processors" : [ ],
+        "remoteProcessGroups" : [ ],
+        "scheduledState" : "ENABLED",
+        "statelessFlowTimeout" : "1 min"
+      },
+      "flowEncodingVersion" : "1.0",
+      "parameterContexts" : { },
+      "parameterProviders" : { }
+    }
+  }
+}

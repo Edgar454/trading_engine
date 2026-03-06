@@ -1,0 +1,14 @@
+tls_server_config:
+  cert_file: /certs/prometheus/server.crt
+  key_file: /certs/prometheus/server.key
+  # THIS enables mTLS - require clients to authenticate
+  client_auth_type: "RequireAndVerifyClientCert"
+  client_ca_file: /certs/prometheus/ca.pem
+  
+  # Optional: restrict to specific client certificate SANs
+  client_allowed_sans:
+    - "grafana.trading.local"
+    - "localhost"
+
+http_server_config:
+  http2: true

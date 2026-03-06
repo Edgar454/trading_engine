@@ -1,0 +1,6 @@
+# exporter-web.yml
+tls_server_config:
+  cert_file: /certs/postgres-exporter/server.crt
+  key_file: /certs/postgres-exporter/server.key
+  client_auth_type: RequireAndVerifyClientCert
+  client_ca_file: /certs/postgres-exporter/ca.crt

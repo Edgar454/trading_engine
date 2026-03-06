@@ -1,0 +1,55 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # PostgreSQL metrics
+  - job_name: 'postgres'
+    scheme: https
+    # mTLS configuration
+    tls_config:
+      ca_file: /certs/prometheus/ca.pem
+      cert_file: /certs/prometheus/client.crt
+      key_file: /certs/prometheus/client.key
+      server_name: postgres-exporter.trading.local
+      insecure_skip_verify: false 
+    static_configs:
+      - targets: ['nifi-proxy:445']
+
+  - job_name: 'nifi'
+    scheme: https
+    metrics_path: '/nifi-api/flow/metrics/prometheus'
+    
+    # mTLS configuration
+    tls_config:
+      ca_file: /certs/prometheus/ca.pem
+      cert_file: /certs/prometheus/client.crt
+      key_file: /certs/prometheus/client.key
+      server_name: nifi.trading.local
+    
+    static_configs:
+      - targets: ['nifi:8443']
+
+  - job_name: 'vault'
+    metrics_path: '/v1/sys/metrics'
+    params:
+      format: ['prometheus']
+    scheme: https
+    authorization:
+      credentials_file: /opt/prometheus/token/vault-token
+    tls_config:
+      ca_file: /certs/prometheus/ca.pem
+      server_name: vault.trading.local
+    static_configs:
+      - targets: ['vault:8200']
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    scheme: https
+    tls_config:
+      ca_file: /certs/prometheus/ca.pem
+      cert_file: /certs/prometheus/client.crt
+      key_file: /certs/prometheus/client.key
+      server_name: prometheus.trading.local
+    static_configs:
+      - targets: ['localhost:9090']
