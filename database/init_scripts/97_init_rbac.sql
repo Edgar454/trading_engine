@@ -173,9 +173,7 @@ GRANT SELECT ON TABLE liquidations TO trading_engine_services;
 GRANT SELECT ON market_regimes TO trading_engine_services;
 GRANT SELECT ON candles_enriched TO trading_engine_services;
 GRANT SELECT ON l2_metrics TO trading_engine_services;
-GRANT SELECT ON open_positions_summary TO trading_engine_services;
-GRANT SELECT ON pending_orders_summary TO trading_engine_services;
-GRANT SELECT ON trades_summary TO trading_engine_services;
+
 
 -- ============================================
 -- WRITE permissions (trading operations)
@@ -184,8 +182,8 @@ GRANT SELECT ON trades_summary TO trading_engine_services;
 -- Business tables (trading operations)
 GRANT INSERT, UPDATE, DELETE ON TABLE sessions TO trading_engine_services;
 GRANT INSERT, UPDATE, DELETE ON TABLE orders TO trading_engine_services;
-GRANT INSERT, UPDATE, DELETE ON TABLE trades TO trading_engine_services;
-GRANT INSERT, UPDATE, DELETE ON TABLE positions TO trading_engine_services;
+GRANT INSERT, UPDATE, DELETE ON TABLE trade_events TO trading_engine_services;
+GRANT INSERT, UPDATE, DELETE ON TABLE position_events TO trading_engine_services;
 
 -- Sequences
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO trading_engine_services;

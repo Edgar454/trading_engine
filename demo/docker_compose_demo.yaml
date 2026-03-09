@@ -1,0 +1,50 @@
+x-ngrok: &ngrok
+  image: ngrok/ngrok
+  environment: &ngrok_env
+    NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+  depends_on:
+    - nginx
+  networks:
+    - trading_network
+
+services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx
+    ports:
+      - "8543:80"
+      - "3101:90"
+    volumes:
+      - demo-certs:/certs/nginx/:ro
+    networks:
+      - trading_network
+  
+  ngrok-nifi:
+    image: ngrok/ngrok
+    container_name: ngrok-nifi
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    command: ["ngrok", "http", "8543"]
+    ports:
+      - "4040:4040"
+  
+  ngrok-grafana:
+    <<: *ngrok
+    container_name: ngrok-grafana
+    environment:
+      <<: *ngrok_env
+      NGROK_PORT: http://nginx:90
+    ports:
+      - "4041:80"
+
+
+volumes:
+  demo-certs:
+    name: demo-certs
+    external: true
+
+networks:
+  trading_network:
+    external: true

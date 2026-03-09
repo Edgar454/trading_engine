@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Your mounted certs directory
-CERT_DIR="/home/azureuser/data_pipeline/security/vault/vault_certs"
+CERT_DIR=${1:-"/home/azureuser/data_pipeline/security/vault/vault_certs"}
 
 # Create directory if it doesn't exist
 mkdir -p "$CERT_DIR"

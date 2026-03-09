@@ -55,7 +55,10 @@ services:
       - prometheus-token:/opt/prometheus/token/
       - grafana-certs:/certs/grafana
       - nginx-certs:/certs/nginx
+      - demo-certs:/certs/demo
       - postgres-exporter-certs:/certs/postgres-exporter
+    expose:
+      - "8201"
     environment:
       VAULT_ADDR: https://vault:8200
       NIFI_KEYSTORE_PASSWORD: ${NIFI_KEYSTORE_PASSWORD}
@@ -95,6 +98,8 @@ volumes:
     name: grafana-certs
   nginx-certs:
     name: nginx-certs
+  demo-certs:
+    name: demo-certs
   postgres-exporter-certs:
     name: postgres-exporter-certs
 

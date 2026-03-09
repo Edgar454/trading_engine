@@ -61,7 +61,7 @@ services:
 
   timescaledb:
     build:
-      context: ./timescale_config
+      context: ./database
       dockerfile: Dockerfile
     container_name: trading-timescaledb
     restart: always
@@ -73,8 +73,8 @@ services:
       # Application user passwords (for init_users.sh)
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     volumes:
-      - ./timescale_config/config/postgresql.conf:/etc/postgresql/postgresql.conf
-      - ./timescale_config/init_scripts:/docker-entrypoint-initdb.d/
+      - ./database/config/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./database/init_scripts:/docker-entrypoint-initdb.d/
       - timescaledb_data:/var/lib/postgresql/data
       - postgres-certs:/var/lib/postgresql/certs
     ports:

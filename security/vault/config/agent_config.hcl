@@ -29,6 +29,16 @@ listener "unix" {
   tls_disable = true
 }
 
+telemetry {
+  prometheus_retention_time = "24h"
+  disable_hostname = true
+  disable_redirect = false
+}
+
+listener "tcp" {
+  address = "0.0.0.0:9102"
+  tls_disable = true  
+}
 
 # ============================================
 # VAULT
@@ -87,6 +97,15 @@ template {
 template {
  source       = "/vault/templates/nginx.tpl"
  destination  = "/tmp/nginx.tpl.rendered"
+}
+
+# ============================================
+# DEMO NGINX
+# ============================================
+
+template {
+ source       = "/vault/templates/demo.tpl"
+ destination  = "/tmp/demo.tpl.rendered"
 }
 
 

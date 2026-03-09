@@ -43,6 +43,13 @@ scrape_configs:
     static_configs:
       - targets: ['vault:8200']
 
+  - job_name: 'vault_agent'
+    metrics_path: '/metrics'
+    params:
+      format: ['prometheus']
+    static_configs:
+      - targets: ['vault-agent:8201']
+
   # Prometheus itself
   - job_name: 'prometheus'
     scheme: https
