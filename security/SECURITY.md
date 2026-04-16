@@ -10,6 +10,46 @@ Instead of relying on passwords or trusted networks, every service authenticates
 
 ---
 
+## 📁 Folder Structure
+
+```
+security/
+├── vault/
+│   ├── config/      
+│   ├── templates/ 
+│   ├── setup/
+│   └── vault_certs/
+├── minio/                
+├── secrets/               # Sensitive files (not committed)
+├── Makefile               # Utility commands
+├── .env.production        # Environment variables
+├── docker-compose.yaml    # Service orchestration
+└── README.md
+```
+---
+
+## 🚀 Deployment
+
+The database stack is automatically **built and deployed** via a CI/CD pipeline.
+
+No manual intervention is required under normal conditions.
+
+In case of failure:
+* Inspect deployment logs to identify the issue
+
+### 🔧 Manual Deployment
+
+If needed:
+
+1. Navigate to the directory defined by `VM_REPO_WORK_FOLDER`
+2. Run the deployment manually using ```make run```
+
+> ⚠️ **Startup Dependency**
+> This service must started first before the db and the monitoring scripts cause it is responsible
+to setup the certs those services need in their configuration
+
+---
+
 # Zero Trust Model
 
 The platform follows a Zero Trust design where no component is implicitly trusted.
@@ -42,7 +82,7 @@ The Root CA signs the Intermediate CA through a Certificate Signing Request (CSR
 Certificates are restricted to the internal domain:
 
 ```
-trading.local
+indiquant.local
 ```
 
 This ensures that certificates cannot be used outside of the platform infrastructure.
@@ -158,7 +198,7 @@ This reduces the attack surface and ensures that all traffic is authenticated.
 Security-related files are organized under:
 
 ```
-security/vault/
+vault/
 ```
 
 The directory contains four main components.
@@ -178,8 +218,8 @@ Bootstrap scripts used to initialize the PKI infrastructure.
 
 Scripts include:
 
-* `init_vault` — initializes Vault and creates the PKI hierarchy
-* `generate_keystore` — generates keystore and truststore artifacts required by NiFi
+* `bootstrap_pki` — initializes Vault and creates the PKI hierarchy
+* `push_to_minio` — helper script to push some certificates to Minio to make it accessible to humans
 * `bootstrap_certs` — creates temporary certificates allowing Vault to start before the PKI infrastructure is initialized
 
 ## templates
